@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        svg {
+            border: 1px solid #ccc;
+        }
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Visualization with D3.js</h1>
+    <div id="chart"></div>
+    <button id="train-button">Train Model</button>
+    <div id="message"></div>
+
+    <script>
+        // Fetch data for visualization
+        fetch('/api/data')
+            .then(response => response.json())
+            .then(data => {
+                const width = 800;
+                const height = 400;
+                const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+
+                const svg = d3.select("#chart")
+                              .append("svg")
+                              .attr("width", width)
+                              .attr("height", height);
+
+                const x = d3.scaleBand()
+                            .domain(data.map(d => d.name))
+                            .range([margin.left, width - margin.right])
+                            .padding(0.1);
+
+                const y = d3.scaleLinear()
+                            .domain([0, d3.max(data, d => d.value)])
+                            .nice()
+                            .range([height - margin.bottom, margin.top]);
+
+                svg.append("g")
+                   .selectAll("rect")
+                   .data(data)
+                   .join("rect")
+                   .attr("x", d => x(d.name))
+                   .attr("y", d => y(d.value))
+                   .attr("height", d => y(0) - y(d.value))
+                   .attr("width", x.bandwidth())
+                   .attr("fill", "steelblue");
+
+                svg.append("g")
+                   .attr("transform", `translate(0,${height - margin.bottom})`)
+                   .call(d3.axisBottom(x));
+
+                svg.append("g")
+                   .attr("transform", `translate(${margin.left},0)`)
+                   .call(d3.axisLeft(y));
+            });
+
+        // Train model on button click
+        document.getElementById('train-button').addEventListener('click', () => {
+            fetch('/api/train', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('message').innerText = data.message;
+                })
+                .catch(error => {
+                    document.getElementById('message').innerText = "Error: " + error.message;
+                });
+        });
+    </script>
+</body>
+</html>
+
